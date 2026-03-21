@@ -1,3 +1,4 @@
+#include "dht.h"
 #include "driver/gpio.h"
 #include "esp_crt_bundle.h"
 #include "esp_err.h"
@@ -33,12 +34,13 @@
 
 // Logs
 static const char *ESP32_GENERAL_TAG = "esp32_temp";
+static const char *DHT11_TAG = "dht11";
 static const char *WIFI_TAG = "wifi station";
 static const char *HTTP_CLIENT_TAG = "HTTP_CLIENT";
 
 // GPIO
 #define STATUS_LED_GPIO CONFIG_STATUS_LED_GPIO
-#define GPIO_OUTPUT_PIN_SEL ((1ULL << STATUS_LED_GPIO))
+#define GPIO_OUTPUT_LED_SEL ((1ULL << STATUS_LED_GPIO))
 
 // Wifi
 #define ESP_WIFI_SSID CONFIG_ESP_WIFI_SSID
@@ -312,6 +314,20 @@ static void http_rest_with_url(void) {
 
 static void http_rest_with_hostname_path(void) {}
 
+// DHT11
+#define DHT11_GPIO CONFIG_DHT11_GPIO
+// #define GPIO_INPUT_DHT11_PIN_SEL ((1ULL << DHT11_GPIO))
+
+struct DHT11DATA {
+  float humidity;
+  float temp;
+};
+
+static float c_to_f(float tempc) {
+  float temp_f = (tempc * 9.0f / 5.0f) + 32.0f;
+  return temp_f;
+}
+
 void app_main(void) {
   // Initialize NVS
   esp_err_t ret = nvs_flash_init();
@@ -334,15 +350,30 @@ void app_main(void) {
   gpio_config_t io_conf = {};
   io_conf.intr_type = GPIO_INTR_DISABLE;
   io_conf.mode = GPIO_MODE_OUTPUT;
-  io_conf.pin_bit_mask = GPIO_OUTPUT_PIN_SEL;
+  io_conf.pin_bit_mask = GPIO_OUTPUT_LED_SEL;
   io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
   io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
   gpio_config(&io_conf);
 
+  struct DHT11DATA dht11_sensor;
+
   int cnt = 0;
   while (1) {
-    ESP_LOGI(ESP32_GENERAL_TAG, "cnt: %d\n", cnt++);
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    esp_err_t err = dht_read_float_data(
+        DHT_TYPE_DHT11, DHT11_GPIO, &dht11_sensor.humidity, &dht11_sensor.temp);
+    if (err != 0) {
+      ESP_LOGE(DHT11_TAG, "Could not read from DHT11");
+    } else {
+      ESP_LOGI(DHT11_TAG, "Humidity: %.2f, Temp: %.2f", dht11_sensor.humidity,
+               c_to_f(dht11_sensor.temp));
+    }
+    if (cnt % 2 == 0) {
+      ESP_LOGI(ESP32_GENERAL_TAG, "LED OFF");
+    } else {
+      ESP_LOGI(ESP32_GENERAL_TAG, "LED ON");
+    }
+    vTaskDelay(pdMS_TO_TICKS(3000));
     gpio_set_level(STATUS_LED_GPIO, cnt % 2);
+    cnt++;
   }
 }
