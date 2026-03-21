@@ -1,0 +1,29 @@
+menu "Room Sensor Config"
+
+config DHT11_GPIO
+	int "DHT11 data GPIO"
+	range 0 39
+	default 5
+	help
+		GPIO used for DHT11 data pin.
+config STATUS_LED_GPIO
+	int "Status LED GPIO"
+	range 0 39
+	default 2
+	help
+		GPIO used for status led pin.
+endmenu
+
+menu "Wifi Config"
+
+config ESP_WIFI_SSID
+	string "WIFI SSID"
+	default "myssid"
+	help
+		SSID (network name) for the esp32 to connect to.
+config ESP_WIFI_PASSWORD
+	string "WIFI PASSWORD"
+	default "mypassword"
+	help
+		SSID (network name) for the esp32 to connect to.
+endmenu
