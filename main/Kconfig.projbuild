@@ -1,18 +1,20 @@
 menu "Room Sensor Config"
 
-config DHT11_GPIO
-	int "DHT11 data GPIO"
-	range 0 39
-	default 5
-	help
-		GPIO used for DHT11 data pin.
+	orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
 
-config STATUS_LED_GPIO
-	int "Status LED GPIO"
-	range 0 39
-	default 2
-	help
-		GPIO used for status led pin.
+	config DHT11_GPIO
+		int "DHT11 data GPIO"
+		range ENV_GPIO_RANGE_MIN ENV_GPIO_RANGE_MAX
+		default 5
+		help
+			GPIO used for DHT11 data pin.
+
+	config STATUS_LED_GPIO
+		int "Status LED GPIO"
+		range ENV_GPIO_RANGE_MIN ENV_GPIO_RANGE_MAX
+		default 2
+		help
+			GPIO used for status led pin.
 endmenu
 
 menu "Wifi Config"

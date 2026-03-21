@@ -1,0 +1,50 @@
+# Room Sensor Server
+
+This server accepts JSON readings from the ESP32 and shows the latest reading in a browser.
+
+## Endpoints
+
+- `POST /api/readings`
+- `POST /post`
+- `GET /`
+- `GET /api/readings/latest`
+- `GET /api/readings`
+- `GET /health`
+
+## Expected JSON
+
+```json
+{
+  "device_id": "room-1",
+  "temp_c": 23,
+  "humidity": 51
+}
+```
+
+String numbers are accepted too, so your current ESP32 payload style will still work.
+
+## Run with Docker Compose
+
+From the project root:
+
+```sh
+docker compose up --build
+```
+
+Then open:
+
+```text
+http://localhost:6969/
+```
+
+If your ESP32 is posting from another device on the LAN, point it at your computer's LAN IP on port `6969`.
+
+## Local test with curl
+
+```sh
+curl -X POST http://127.0.0.1:6969/api/readings \
+  -H "Content-Type: application/json" \
+  -d '{"device_id":"test-esp32","temp_c":22,"humidity":50}'
+```
+
+The latest reading is persisted to `server/data/readings.jsonl` via the mounted Docker volume.
