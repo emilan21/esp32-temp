@@ -2,6 +2,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from flask import Flask, jsonify, render_template, request
 
@@ -9,8 +10,23 @@ from flask import Flask, jsonify, render_template, request
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/data"))
 DATA_FILE = DATA_DIR / "readings.jsonl"
 RECENT_LIMIT = 20
+DISPLAY_TZ = ZoneInfo(os.environ.get("DISPLAY_TZ", "America/New_York"))
 
 app = Flask(__name__)
+
+
+@app.template_filter("local_time")
+def local_time_filter(value):
+    if not value:
+        return "-"
+
+    timestamp = datetime.fromisoformat(value)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+
+    local_time = timestamp.astimezone(DISPLAY_TZ)
+    formatted = local_time.strftime("%b %d, %Y %I:%M:%S %p %Z")
+    return formatted.replace(" 0", " ")
 
 
 def ensure_data_dir():
@@ -36,22 +52,37 @@ def parse_number(value, field_name):
     raise ValueError(f"{field_name} must be numeric")
 
 
+def c_to_f(temp_c):
+    return (temp_c * 9.0 / 5.0) + 32.0
+
+
+def f_to_c(temp_f):
+    return (temp_f - 32.0) * 5.0 / 9.0
+
+
 def normalize_reading(payload):
     if not isinstance(payload, dict):
         raise ValueError("JSON body must be an object")
 
-    if "temp_c" not in payload:
-        raise ValueError("temp_c is required")
+    if "temp_f" not in payload and "temp_c" not in payload:
+        raise ValueError("temp_f or temp_c is required")
 
     if "humidity" not in payload:
         raise ValueError("humidity is required")
 
     device_id = str(payload.get("device_id", "unknown"))
-    temp_c = parse_number(payload["temp_c"], "temp_c")
     humidity = parse_number(payload["humidity"], "humidity")
+
+    if "temp_f" in payload:
+        temp_f = parse_number(payload["temp_f"], "temp_f")
+        temp_c = round(f_to_c(temp_f), 2)
+    else:
+        temp_c = parse_number(payload["temp_c"], "temp_c")
+        temp_f = round(c_to_f(temp_c), 2)
 
     reading = {
         "device_id": device_id,
+        "temp_f": temp_f,
         "temp_c": temp_c,
         "humidity": humidity,
         "received_at": utc_now_iso(),

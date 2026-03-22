@@ -28,6 +28,7 @@
 #include "portmacro.h"
 #include "sdkconfig.h"
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
@@ -260,7 +261,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
   return ESP_OK;
 }
 
-static void http_rest_with_url(void) {
+static void http_rest_with_url(char *post_data) {
   // Declare local_response_buffer with size (MAX_HTTP_OUTPUT_BUFFER + 1) to
   // prevent out of bound access when it is used functions like strlen(). The
   // buffer should only be used upto size MAX_HTTP_OUTPUT_BUFFER
@@ -268,7 +269,7 @@ static void http_rest_with_url(void) {
 
   esp_http_client_config_t config = {
       .host = CONFIG_HTTP_ENDPOINT,
-      .path = "/post",
+      .path = "post",
       .query = "esp",
       .port = 6969,
       .event_handler = _http_event_handler,
@@ -293,8 +294,6 @@ static void http_rest_with_url(void) {
   //                   strlen(local_response_buffer));
 
   // POST
-  const char *post_data =
-      "{\"device_id\":\"test-esp32\",\"temp_c\":\"22\",\"humidity\":\"50\"}";
   // esp_http_client_set_url(client, "http://" CONFIG_HTTP_ENDPOINT "/post");
   esp_http_client_set_method(client, HTTP_METHOD_POST);
   esp_http_client_set_header(client, "Content-Type", "application/json");
@@ -345,8 +344,6 @@ void app_main(void) {
   ESP_LOGI(WIFI_TAG, "ESP_WIFI_MODE_STA");
   wifi_init_sta();
 
-  http_rest_with_url();
-
   gpio_config_t io_conf = {};
   io_conf.intr_type = GPIO_INTR_DISABLE;
   io_conf.mode = GPIO_MODE_OUTPUT;
@@ -356,6 +353,7 @@ void app_main(void) {
   gpio_config(&io_conf);
 
   struct DHT11DATA dht11_sensor;
+  char post_data[100];
 
   int cnt = 0;
   while (1) {
@@ -366,6 +364,13 @@ void app_main(void) {
     } else {
       ESP_LOGI(DHT11_TAG, "Humidity: %.2f, Temp: %.2f", dht11_sensor.humidity,
                c_to_f(dht11_sensor.temp));
+      snprintf(post_data, sizeof(post_data),
+               "{\"device_id\":\"test-esp32\",\"temp_f\":\"%.2f\",\"humidity\":"
+               "\"%.2f\"}",
+               c_to_f(dht11_sensor.temp), dht11_sensor.humidity);
+      if (cnt % 10 == 0) {
+        http_rest_with_url(post_data);
+      }
     }
     if (cnt % 2 == 0) {
       ESP_LOGI(ESP32_GENERAL_TAG, "LED OFF");

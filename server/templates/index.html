@@ -171,13 +171,13 @@
     <main>
       <section class="hero">
         <h1>Room Sensor Live Feed</h1>
-        <p class="subtitle">The page refreshes every 5 seconds and shows the latest JSON body posted by your ESP32, plus a short recent history.</p>
+        <p class="subtitle">The page refreshes every 5 seconds and shows the latest JSON body posted by your ESP32, plus a short recent history in US/Eastern time.</p>
 
         {% if latest %}
         <div class="grid">
           <article class="card">
             <div class="label">Temperature</div>
-            <div class="value">{{ latest.temp_c }} C</div>
+            <div class="value">{{ latest.temp_f }} F</div>
           </article>
           <article class="card">
             <div class="label">Humidity</div>
@@ -189,7 +189,7 @@
           </article>
         </div>
 
-        <p class="meta">Received at {{ latest.received_at }}</p>
+        <p class="meta">Received at {{ latest.received_at | local_time }}</p>
         <pre class="json">{{ latest | tojson(indent=2) }}</pre>
         {% else %}
         <p class="empty">No readings yet. Post JSON to <span class="badge">/api/readings</span> or <span class="badge">/post</span>.</p>
@@ -206,16 +206,16 @@
             <tr>
               <th>Received</th>
               <th>Device</th>
-              <th>Temp C</th>
+              <th>Temp F</th>
               <th>Humidity</th>
             </tr>
           </thead>
           <tbody>
             {% for item in recent %}
             <tr>
-              <td>{{ item.received_at }}</td>
+              <td>{{ item.received_at | local_time }}</td>
               <td>{{ item.device_id }}</td>
-              <td>{{ item.temp_c }}</td>
+              <td>{{ item.temp_f }}</td>
               <td>{{ item.humidity }}</td>
             </tr>
             {% endfor %}
