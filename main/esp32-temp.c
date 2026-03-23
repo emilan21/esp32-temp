@@ -156,11 +156,9 @@ void wifi_init_sta(void) {
                                          pdFALSE, pdFALSE, portMAX_DELAY);
 
   if (bits & WIFI_CONNECTED_BIT) {
-    ESP_LOGI(WIFI_TAG, "connected to ap SSID:%s password:%s", ESP_WIFI_SSID,
-             ESP_WIFI_PASSWORD);
+    ESP_LOGI(WIFI_TAG, "connected to configured Wi-Fi network");
   } else if (bits & WIFI_FAIL_BIT) {
-    ESP_LOGI(WIFI_TAG, "Falied to connect to SSID:%s, password:%s",
-             ESP_WIFI_SSID, ESP_WIFI_PASSWORD);
+    ESP_LOGI(WIFI_TAG, "failed to connect to configured Wi-Fi network");
   } else {
     ESP_LOGE(WIFI_TAG, "UNEXPECTED EVENT");
   }
