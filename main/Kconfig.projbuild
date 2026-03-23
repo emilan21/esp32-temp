@@ -117,7 +117,7 @@ menu "HTTP Client Configuration"
 	config HTTP_PORT
 		int "HTTP Port"
 		range 1 65535
-		default 6969
+		default 8080
 		help
 			Target HTTP server port.
 

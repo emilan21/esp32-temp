@@ -62,16 +62,22 @@ From the repo root:
 docker compose up --build
 ```
 
+If you want a different port:
+
+```sh
+SERVER_PORT=8090 docker compose up --build
+```
+
 Then open:
 
 ```text
-http://localhost:6969/
+http://localhost:8080/
 ```
 
 History view:
 
 ```text
-http://localhost:6969/history
+http://localhost:8080/history
 ```
 
 ## Build And Flash Firmware

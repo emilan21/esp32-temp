@@ -42,10 +42,16 @@ From the project root:
 docker compose up --build
 ```
 
+To use a different port:
+
+```sh
+SERVER_PORT=8090 docker compose up --build
+```
+
 Then open:
 
 ```text
-http://localhost:6969/
+http://localhost:8080/
 ```
 
 The page displays timestamps in `US/Eastern` by default.
@@ -56,12 +62,12 @@ The history page supports these ranges:
 - `7d`
 - `30d`
 
-If your ESP32 is posting from another device on the LAN, point it at your computer's LAN IP on port `6969`.
+If your ESP32 is posting from another device on the LAN, point it at your computer's LAN IP on whatever `SERVER_PORT` you chose.
 
 ## Local test with curl
 
 ```sh
-curl -X POST http://127.0.0.1:6969/api/readings \
+curl -X POST http://127.0.0.1:8080/api/readings \
   -H "Content-Type: application/json" \
   -d '{"device_id":"test-esp32","temp_f":73.4,"humidity":50}'
 ```

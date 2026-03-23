@@ -4,7 +4,7 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PORT=6969
+ENV PORT=8080
 ENV DATA_DIR=/data
 
 COPY requirements.txt .
@@ -13,6 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 COPY templates ./templates
 
-EXPOSE 6969
+EXPOSE 8080
 
-CMD ["gunicorn", "--bind", "0.0.0.0:6969", "--workers", "1", "--threads", "4", "app:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 4 app:app"]

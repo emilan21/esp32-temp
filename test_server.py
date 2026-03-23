@@ -40,7 +40,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     host = "0.0.0.0"
-    port = 6969
+    port = 8080
     server = HTTPServer((host, port), Handler)
     print(f"Listening on http://{host}:{port}")
     server.serve_forever()

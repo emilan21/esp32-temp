@@ -527,5 +527,5 @@ migrate_legacy_jsonl_if_needed()
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "6969"))
+    port = int(os.environ.get("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=False)
