@@ -125,11 +125,32 @@ def load_latest_reading():
     return readings[0]
 
 
+def load_latest_by_device():
+    readings = load_recent_readings(limit=1000)
+    latest_by_device = {}
+
+    for reading in readings:
+        device_id = reading.get("device_id", "unknown")
+        if device_id not in latest_by_device:
+            latest_by_device[device_id] = reading
+
+    devices = list(latest_by_device.values())
+    devices.sort(key=lambda item: item.get("device_id", "unknown").lower())
+    return devices
+
+
 @app.get("/")
 def index():
     latest = load_latest_reading()
+    devices = load_latest_by_device()
     recent = load_recent_readings()
-    return render_template("index.html", latest=latest, recent=recent)
+    return render_template(
+        "index.html",
+        latest=latest,
+        devices=devices,
+        device_count=len(devices),
+        recent=recent,
+    )
 
 
 @app.get("/health")
@@ -148,6 +169,11 @@ def latest_reading():
 @app.get("/api/readings")
 def recent_readings():
     return jsonify(load_recent_readings())
+
+
+@app.get("/api/readings/latest-by-device")
+def latest_readings_by_device():
+    return jsonify(load_latest_by_device())
 
 
 @app.post("/post")

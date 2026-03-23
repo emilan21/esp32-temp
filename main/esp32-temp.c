@@ -42,11 +42,22 @@ static const char *HTTP_CLIENT_TAG = "HTTP_CLIENT";
 // GPIO
 #define STATUS_LED_GPIO CONFIG_STATUS_LED_GPIO
 #define GPIO_OUTPUT_LED_SEL ((1ULL << STATUS_LED_GPIO))
+#define DHT11_GPIO CONFIG_DHT11_GPIO
+
+// Device
+#define DEVICE_ID CONFIG_DEVICE_ID
+#define SENSOR_READ_INTERVAL_SECONDS CONFIG_SENSOR_READ_INTERVAL_SECONDS
+#define POST_EVERY_N_READS CONFIG_POST_EVERY_N_READS
 
 // Wifi
 #define ESP_WIFI_SSID CONFIG_ESP_WIFI_SSID
 #define ESP_WIFI_PASSWORD CONFIG_ESP_WIFI_PASSWORD
 #define ESP_WIFI_MAXIMUM_RETRY CONFIG_ESP_WIFI_MAXIMUM_RETRY
+
+// HTTP
+#define HTTP_ENDPOINT CONFIG_HTTP_ENDPOINT
+#define HTTP_PORT CONFIG_HTTP_PORT
+#define HTTP_PATH CONFIG_HTTP_PATH
 
 #if CONFIG_ESP_STATION_WPA3_SAE_PWE_HUNT_AND_PECK
 #define ESP_WIFI_SAE_MODE WPA3_SAE_PWE_HUNT_AND_PECK
@@ -261,17 +272,16 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
   return ESP_OK;
 }
 
-static void http_rest_with_url(char *post_data) {
+static void http_rest_with_url(const char *post_data) {
   // Declare local_response_buffer with size (MAX_HTTP_OUTPUT_BUFFER + 1) to
   // prevent out of bound access when it is used functions like strlen(). The
   // buffer should only be used upto size MAX_HTTP_OUTPUT_BUFFER
   char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER + 1] = {0};
 
   esp_http_client_config_t config = {
-      .host = CONFIG_HTTP_ENDPOINT,
-      .path = "post",
-      .query = "esp",
-      .port = 6969,
+      .host = HTTP_ENDPOINT,
+      .path = HTTP_PATH,
+      .port = HTTP_PORT,
       .event_handler = _http_event_handler,
       .user_data = local_response_buffer,
       .disable_auto_redirect = 1,
@@ -313,10 +323,6 @@ static void http_rest_with_url(char *post_data) {
 
 static void http_rest_with_hostname_path(void) {}
 
-// DHT11
-#define DHT11_GPIO CONFIG_DHT11_GPIO
-// #define GPIO_INPUT_DHT11_PIN_SEL ((1ULL << DHT11_GPIO))
-
 struct DHT11DATA {
   float humidity;
   float temp;
@@ -353,7 +359,10 @@ void app_main(void) {
   gpio_config(&io_conf);
 
   struct DHT11DATA dht11_sensor;
-  char post_data[100];
+  char post_data[160];
+  float humidity_sum = 0.0f;
+  float temp_f_sum = 0.0f;
+  int samples_since_post = 0;
 
   int cnt = 0;
   while (1) {
@@ -362,14 +371,32 @@ void app_main(void) {
     if (err != 0) {
       ESP_LOGE(DHT11_TAG, "Could not read from DHT11");
     } else {
-      ESP_LOGI(DHT11_TAG, "Humidity: %.2f, Temp: %.2f", dht11_sensor.humidity,
-               c_to_f(dht11_sensor.temp));
-      snprintf(post_data, sizeof(post_data),
-               "{\"device_id\":\"test-esp32\",\"temp_f\":\"%.2f\",\"humidity\":"
-               "\"%.2f\"}",
-               c_to_f(dht11_sensor.temp), dht11_sensor.humidity);
-      if (cnt % 10 == 0) {
+      float temp_f = c_to_f(dht11_sensor.temp);
+      humidity_sum += dht11_sensor.humidity;
+      temp_f_sum += temp_f;
+      samples_since_post++;
+
+      ESP_LOGI(DHT11_TAG, "Humidity: %.2f, Temp: %.2f F (%d/%d samples)",
+               dht11_sensor.humidity, temp_f, samples_since_post,
+               POST_EVERY_N_READS);
+
+      if (samples_since_post >= POST_EVERY_N_READS) {
+        float avg_humidity = humidity_sum / samples_since_post;
+        float avg_temp_f = temp_f_sum / samples_since_post;
+
+        snprintf(post_data, sizeof(post_data),
+                 "{\"device_id\":\"%s\",\"temp_f\":\"%.2f\",\"humidity\":"
+                 "\"%.2f\"}",
+                 DEVICE_ID, avg_temp_f, avg_humidity);
+
+        ESP_LOGI(HTTP_CLIENT_TAG,
+                 "Posting averaged reading after %d samples: temp_f=%.2f humidity=%.2f",
+                 samples_since_post, avg_temp_f, avg_humidity);
         http_rest_with_url(post_data);
+
+        humidity_sum = 0.0f;
+        temp_f_sum = 0.0f;
+        samples_since_post = 0;
       }
     }
     if (cnt % 2 == 0) {
@@ -377,7 +404,7 @@ void app_main(void) {
     } else {
       ESP_LOGI(ESP32_GENERAL_TAG, "LED ON");
     }
-    vTaskDelay(pdMS_TO_TICKS(3000));
+    vTaskDelay(pdMS_TO_TICKS(SENSOR_READ_INTERVAL_SECONDS * 1000));
     gpio_set_level(STATUS_LED_GPIO, cnt % 2);
     cnt++;
   }

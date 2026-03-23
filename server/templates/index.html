@@ -4,16 +4,20 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="refresh" content="5">
-    <title>ESP32 Room Sensor</title>
+    <title>ESP32 Room Sensors</title>
     <style>
       :root {
-        --bg: #f4efe6;
-        --panel: #fffaf2;
-        --ink: #1f2a2e;
-        --muted: #6d7c80;
-        --line: #d8cdbb;
+        --bg: #f3eee5;
+        --panel: rgba(255, 250, 242, 0.92);
+        --panel-strong: #fffaf2;
+        --ink: #1e282c;
+        --muted: #6d7a80;
+        --line: #d8ccb9;
         --accent: #c56538;
-        --accent-soft: #f0d8c8;
+        --accent-soft: #f1d8c7;
+        --cool: #2c6d8b;
+        --warm: #c56538;
+        --shadow: rgba(61, 40, 20, 0.09);
       }
 
       * {
@@ -26,95 +30,175 @@
         font-family: Georgia, "Times New Roman", serif;
         color: var(--ink);
         background:
-          radial-gradient(circle at top left, #fff7ea 0, transparent 32%),
-          linear-gradient(180deg, #efe4d2 0%, var(--bg) 100%);
+          radial-gradient(circle at top left, #fff7eb 0, transparent 28%),
+          linear-gradient(180deg, #ecdfc9 0%, var(--bg) 100%);
       }
 
       main {
-        width: min(960px, calc(100% - 2rem));
-        margin: 2rem auto 3rem;
+        width: min(1180px, calc(100% - 2rem));
+        margin: 1.5rem auto 3rem;
+      }
+
+      .hero,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--panel);
+        box-shadow: 0 18px 50px var(--shadow);
       }
 
       .hero {
-        padding: 1.75rem;
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        background: rgba(255, 250, 242, 0.9);
-        box-shadow: 0 18px 50px rgba(54, 36, 18, 0.08);
+        padding: 1.6rem;
       }
 
       h1,
-      h2 {
+      h2,
+      h3,
+      p {
         margin: 0;
-        font-weight: 600;
       }
 
       h1 {
-        font-size: clamp(2rem, 5vw, 3.4rem);
+        font-size: clamp(2rem, 4.5vw, 3.5rem);
         line-height: 1;
+      }
+
+      h2 {
+        font-size: 1.3rem;
       }
 
       .subtitle,
       .meta,
-      .empty {
+      .empty,
+      .tiny {
         color: var(--muted);
       }
 
       .subtitle {
-        margin-top: 0.75rem;
-        max-width: 50ch;
+        margin-top: 0.7rem;
+        max-width: 58ch;
         line-height: 1.5;
       }
 
-      .grid {
+      .summary-grid,
+      .device-grid {
         display: grid;
         gap: 1rem;
-        margin-top: 1.25rem;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       }
 
-      .card {
+      .summary-grid {
+        margin-top: 1.25rem;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .summary-card,
+      .device-card {
         border: 1px solid var(--line);
         border-radius: 18px;
-        background: var(--panel);
+        background: var(--panel-strong);
+      }
+
+      .summary-card {
         padding: 1rem;
       }
 
-      .label {
-        font-size: 0.8rem;
+      .eyebrow {
+        font-size: 0.78rem;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--muted);
       }
 
-      .value {
+      .summary-value {
         margin-top: 0.35rem;
-        font-size: clamp(1.8rem, 4vw, 2.8rem);
+        font-size: clamp(1.65rem, 4vw, 2.4rem);
+      }
+
+      .device-section,
+      .history-section {
+        margin-top: 1.25rem;
+      }
+
+      .panel-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, #fffaf2, #f5eadb);
+      }
+
+      .panel-body {
+        padding: 1rem;
+      }
+
+      .device-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      }
+
+      .device-card {
+        overflow: hidden;
+      }
+
+      .device-card header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1rem 0.75rem;
+      }
+
+      .device-name {
+        font-size: 1.2rem;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0.28rem 0.62rem;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 0.82rem;
+      }
+
+      .device-stats {
+        display: grid;
+        gap: 0.9rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 0 1rem 1rem;
+      }
+
+      .stat {
+        padding: 0.85rem;
+        border-radius: 16px;
+        background: #fbf4ea;
+        border: 1px solid #eadcc8;
+      }
+
+      .stat.temp {
+        background: linear-gradient(180deg, #fff1e9, #fae3d5);
+      }
+
+      .stat.humidity {
+        background: linear-gradient(180deg, #edf6fa, #dceef7);
+      }
+
+      .stat-value {
+        margin-top: 0.25rem;
+        font-size: 1.9rem;
+      }
+
+      .device-meta {
+        padding: 0 1rem 1rem;
+        line-height: 1.5;
       }
 
       .json {
-        margin-top: 1.25rem;
+        margin-top: 0.8rem;
         padding: 1rem;
         border-radius: 18px;
         border: 1px solid var(--line);
         background: #1e2327;
-        color: #f3eee5;
+        color: #f1ede6;
         overflow-x: auto;
         white-space: pre-wrap;
-      }
-
-      .history {
-        margin-top: 1.25rem;
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        background: rgba(255, 250, 242, 0.92);
-        overflow: hidden;
-      }
-
-      .history-header {
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid var(--line);
-        background: linear-gradient(180deg, #fffaf2, #f6ebdc);
       }
 
       table {
@@ -124,15 +208,16 @@
 
       th,
       td {
-        padding: 0.85rem 1.25rem;
+        padding: 0.85rem 1rem;
         text-align: left;
         border-bottom: 1px solid var(--line);
+        vertical-align: top;
       }
 
       th {
-        font-size: 0.82rem;
-        text-transform: uppercase;
+        font-size: 0.8rem;
         letter-spacing: 0.06em;
+        text-transform: uppercase;
         color: var(--muted);
       }
 
@@ -140,23 +225,25 @@
         border-bottom: 0;
       }
 
-      .badge {
-        display: inline-block;
-        padding: 0.28rem 0.6rem;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        color: var(--accent);
+      .empty {
+        padding: 1rem 1.25rem;
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 720px) {
         main {
           width: min(100% - 1rem, 100%);
           margin-top: 1rem;
         }
 
         .hero,
-        .history {
+        .panel,
+        .summary-card,
+        .device-card {
           border-radius: 16px;
+        }
+
+        .device-stats {
+          grid-template-columns: 1fr;
         }
 
         th,
@@ -170,35 +257,67 @@
   <body>
     <main>
       <section class="hero">
-        <h1>Room Sensor Live Feed</h1>
-        <p class="subtitle">The page refreshes every 5 seconds and shows the latest JSON body posted by your ESP32, plus a short recent history in US/Eastern time.</p>
+        <h1>ESP32 Room Sensors</h1>
+        <p class="subtitle">This dashboard refreshes every 5 seconds and shows the latest reading from each room sensor, plus a shared activity feed in US/Eastern time.</p>
 
-        {% if latest %}
-        <div class="grid">
-          <article class="card">
-            <div class="label">Temperature</div>
-            <div class="value">{{ latest.temp_f }} F</div>
+        <div class="summary-grid">
+          <article class="summary-card">
+            <div class="eyebrow">Reporting Devices</div>
+            <div class="summary-value">{{ device_count }}</div>
           </article>
-          <article class="card">
-            <div class="label">Humidity</div>
-            <div class="value">{{ latest.humidity }}%</div>
+          <article class="summary-card">
+            <div class="eyebrow">Latest Check-In</div>
+            <div class="summary-value tiny">{% if latest %}{{ latest.received_at | local_time }}{% else %}No data yet{% endif %}</div>
           </article>
-          <article class="card">
-            <div class="label">Device</div>
-            <div class="value">{{ latest.device_id }}</div>
+          <article class="summary-card">
+            <div class="eyebrow">Posting Endpoints</div>
+            <div class="summary-value tiny"><span class="badge">/api/readings</span> <span class="badge">/post</span></div>
           </article>
         </div>
-
-        <p class="meta">Received at {{ latest.received_at | local_time }}</p>
-        <pre class="json">{{ latest | tojson(indent=2) }}</pre>
-        {% else %}
-        <p class="empty">No readings yet. Post JSON to <span class="badge">/api/readings</span> or <span class="badge">/post</span>.</p>
-        {% endif %}
       </section>
 
-      <section class="history">
-        <div class="history-header">
-          <h2>Recent Readings</h2>
+      <section class="panel device-section">
+        <div class="panel-header">
+          <h2>Current Rooms</h2>
+        </div>
+        <div class="panel-body">
+          {% if devices %}
+          <div class="device-grid">
+            {% for device in devices %}
+            <article class="device-card">
+              <header>
+                <div>
+                  <h3 class="device-name">{{ device.device_id }}</h3>
+                  <div class="tiny">Last seen {{ device.received_at | local_time }}</div>
+                </div>
+                <span class="badge">online</span>
+              </header>
+              <div class="device-stats">
+                <div class="stat temp">
+                  <div class="eyebrow">Temperature</div>
+                  <div class="stat-value">{{ device.temp_f }} F</div>
+                </div>
+                <div class="stat humidity">
+                  <div class="eyebrow">Humidity</div>
+                  <div class="stat-value">{{ device.humidity }}%</div>
+                </div>
+              </div>
+              <div class="device-meta">
+                <div class="tiny">Also stored as {{ device.temp_c }} C on the server.</div>
+                <pre class="json">{{ device | tojson(indent=2) }}</pre>
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="empty">No devices have posted yet. Start one ESP32 and send JSON to <span class="badge">/api/readings</span> or <span class="badge">/post</span>.</p>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="panel history-section">
+        <div class="panel-header">
+          <h2>Recent Activity</h2>
         </div>
         {% if recent %}
         <table>
@@ -222,7 +341,7 @@
           </tbody>
         </table>
         {% else %}
-        <p class="empty" style="padding: 1rem 1.25rem;">History will appear here after the first successful POST.</p>
+        <p class="empty">History will appear here after the first successful POST.</p>
         {% endif %}
       </section>
     </main>
