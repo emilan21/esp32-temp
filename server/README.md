@@ -1,6 +1,6 @@
 # Room Sensor Server
 
-This server accepts JSON readings from the ESP32 and shows the latest reading in a browser.
+This server accepts JSON readings from one or more ESP32 devices and shows the latest reading from each device in a browser.
 
 It accepts Fahrenheit or Celsius input and stores both.
 
@@ -10,6 +10,7 @@ It accepts Fahrenheit or Celsius input and stores both.
 - `POST /post`
 - `GET /`
 - `GET /api/readings/latest`
+- `GET /api/readings/latest-by-device`
 - `GET /api/readings`
 - `GET /health`
 
@@ -17,7 +18,7 @@ It accepts Fahrenheit or Celsius input and stores both.
 
 ```json
 {
-  "device_id": "room-1",
+  "device_id": "living-room",
   "temp_f": 73.4,
   "humidity": 51
 }
@@ -26,6 +27,8 @@ It accepts Fahrenheit or Celsius input and stores both.
 `temp_c` also works if you prefer to send Celsius.
 
 String numbers are accepted too, so your current ESP32 payload style will still work.
+
+Use a unique `device_id` for each board so the dashboard can show one card per room.
 
 ## Run with Docker Compose
 

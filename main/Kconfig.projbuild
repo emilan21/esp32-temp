@@ -9,12 +9,32 @@ menu "Room Sensor Config"
 		help
 			GPIO used for DHT11 data pin.
 
-	config STATUS_LED_GPIO
+config STATUS_LED_GPIO
 		int "Status LED GPIO"
 		range ENV_GPIO_RANGE_MIN ENV_GPIO_RANGE_MAX
 		default 2
 		help
 			GPIO used for status led pin.
+
+	config DEVICE_ID
+		string "Device ID"
+		default "test-esp32"
+		help
+			Unique device name sent to the server, such as living-room or bedroom.
+
+	config SENSOR_READ_INTERVAL_SECONDS
+		int "Sensor read interval (seconds)"
+		range 1 3600
+		default 3
+		help
+			How often to read the DHT11 sensor.
+
+	config POST_EVERY_N_READS
+		int "Post every N sensor reads"
+		range 1 100000
+		default 10
+		help
+			How many sensor reads to wait between HTTP posts.
 endmenu
 
 menu "Wifi Config"
@@ -93,6 +113,19 @@ menu "HTTP Client Configuration"
 		default "example.com"
 		help
 			Target endpoint host-name to use
+
+	config HTTP_PORT
+		int "HTTP Port"
+		range 1 65535
+		default 6969
+		help
+			Target HTTP server port.
+
+	config HTTP_PATH
+		string "HTTP Path"
+		default "/post"
+		help
+			Target HTTP server path.
 	
 	config ENABLE_RESPONSE_BUFFER_DUMP
 	bool "Enable logging reponse buffer from HTTP even handler"
