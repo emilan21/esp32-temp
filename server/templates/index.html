@@ -80,6 +80,13 @@
         line-height: 1.5;
       }
 
+      .top-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: 1rem;
+      }
+
       .summary-grid,
       .device-grid {
         display: grid;
@@ -156,6 +163,21 @@
         background: var(--accent-soft);
         color: var(--accent);
         font-size: 0.82rem;
+      }
+
+      .badge.online {
+        background: #dff3e6;
+        color: #217346;
+      }
+
+      .badge.stale {
+        background: #f8e8c9;
+        color: #9b5a00;
+      }
+
+      .badge.offline {
+        background: #f4d8d8;
+        color: #9d2f2f;
       }
 
       .device-stats {
@@ -259,11 +281,18 @@
       <section class="hero">
         <h1>ESP32 Room Sensors</h1>
         <p class="subtitle">This dashboard refreshes every 5 seconds and shows the latest reading from each room sensor, plus a shared activity feed in US/Eastern time.</p>
+        <div class="top-links">
+          <a class="badge" href="/history">Open History View</a>
+        </div>
 
         <div class="summary-grid">
           <article class="summary-card">
             <div class="eyebrow">Reporting Devices</div>
             <div class="summary-value">{{ device_count }}</div>
+          </article>
+          <article class="summary-card">
+            <div class="eyebrow">Online / Stale / Offline</div>
+            <div class="summary-value tiny">{{ status_summary.online }} / {{ status_summary.stale }} / {{ status_summary.offline }}</div>
           </article>
           <article class="summary-card">
             <div class="eyebrow">Latest Check-In</div>
@@ -288,9 +317,9 @@
               <header>
                 <div>
                   <h3 class="device-name">{{ device.device_id }}</h3>
-                  <div class="tiny">Last seen {{ device.received_at | local_time }}</div>
+                  <div class="tiny">Last seen {{ device.received_at | local_time }} ({{ device.age_label }})</div>
                 </div>
-                <span class="badge">online</span>
+                <span class="badge {{ device.status }}">{{ device.status }}</span>
               </header>
               <div class="device-stats">
                 <div class="stat temp">
