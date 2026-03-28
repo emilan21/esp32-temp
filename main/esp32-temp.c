@@ -48,11 +48,14 @@ static const char *HTTP_CLIENT_TAG = "HTTP_CLIENT";
 #define DEVICE_ID CONFIG_DEVICE_ID
 #define SENSOR_READ_INTERVAL_SECONDS CONFIG_SENSOR_READ_INTERVAL_SECONDS
 #define POST_EVERY_N_READS CONFIG_POST_EVERY_N_READS
+#define DHT11_REBOOT_FAILURE_THRESHOLD CONFIG_DHT11_REBOOT_FAILURE_THRESHOLD
+#define HTTP_REBOOT_FAILURE_THRESHOLD CONFIG_HTTP_REBOOT_FAILURE_THRESHOLD
 
 // Wifi
 #define ESP_WIFI_SSID CONFIG_ESP_WIFI_SSID
 #define ESP_WIFI_PASSWORD CONFIG_ESP_WIFI_PASSWORD
 #define ESP_WIFI_MAXIMUM_RETRY CONFIG_ESP_WIFI_MAXIMUM_RETRY
+#define ESP_WIFI_REBOOT_FAILURE_THRESHOLD CONFIG_ESP_WIFI_REBOOT_FAILURE_THRESHOLD
 
 // HTTP
 #define HTTP_ENDPOINT CONFIG_HTTP_ENDPOINT
@@ -91,6 +94,7 @@ static const char *HTTP_CLIENT_TAG = "HTTP_CLIENT";
 #define WIFI_FAIL_BIT BIT1
 static EventGroupHandle_t s_wifi_event_group;
 static int s_retry_num = 0;
+static int s_wifi_failure_count = 0;
 
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data) {
@@ -98,18 +102,33 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     esp_wifi_connect();
   } else if (event_base == WIFI_EVENT &&
              event_id == WIFI_EVENT_STA_DISCONNECTED) {
-    if (s_retry_num < ESP_WIFI_MAXIMUM_RETRY) {
-      esp_wifi_connect();
-      s_retry_num++;
-      ESP_LOGI(WIFI_TAG, "retry to connect to the AP");
-    } else {
+    wifi_event_sta_disconnected_t *event =
+        (wifi_event_sta_disconnected_t *)event_data;
+    s_retry_num++;
+    s_wifi_failure_count++;
+
+    ESP_LOGW(WIFI_TAG,
+             "WiFi disconnected (reason=%d), retry attempt %d, consecutive failures %d",
+             event->reason, s_retry_num, s_wifi_failure_count);
+
+    if (s_wifi_failure_count >= ESP_WIFI_REBOOT_FAILURE_THRESHOLD) {
+      ESP_LOGE(WIFI_TAG,
+               "WiFi failure threshold reached (%d), restarting device",
+               s_wifi_failure_count);
+      esp_restart();
+    }
+
+    if (s_retry_num >= ESP_WIFI_MAXIMUM_RETRY) {
       xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
     }
-    ESP_LOGI(WIFI_TAG, "connect to the AP fail");
+
+    esp_wifi_connect();
   } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
     ESP_LOGI(WIFI_TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
     s_retry_num = 0;
+    s_wifi_failure_count = 0;
+    xEventGroupClearBits(s_wifi_event_group, WIFI_FAIL_BIT);
     xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
   }
 }
@@ -364,10 +383,9 @@ void app_main(void) {
   int cnt = 0;
   int dht11_failures = 0;
   int http_failures = 0;
-  int wifi_failures = 0;
   while (1) {
     // resets
-    if (dht11_failures >= 30) {
+    if (dht11_failures >= DHT11_REBOOT_FAILURE_THRESHOLD) {
       esp_err_t dht11_err =
           dht_read_float_data(DHT_TYPE_DHT11, DHT11_GPIO,
                               &dht11_sensor.humidity, &dht11_sensor.temp);
@@ -377,7 +395,7 @@ void app_main(void) {
         dht11_failures = 0;
       }
     }
-    if (http_failures >= 10) {
+    if (http_failures >= HTTP_REBOOT_FAILURE_THRESHOLD) {
       esp_err_t http_err = http_rest_with_url(post_data);
       if (http_err != 0) {
         esp_restart();

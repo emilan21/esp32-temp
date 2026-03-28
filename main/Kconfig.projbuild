@@ -35,6 +35,18 @@ config STATUS_LED_GPIO
 		default 10
 		help
 			How many sensor reads to wait between HTTP posts.
+
+	config DHT11_REBOOT_FAILURE_THRESHOLD
+		int "DHT11 reboot failure threshold"
+		default 30
+		help
+			Reboot the ESP32 after this many consecutive DHT11 read failures.
+
+	config HTTP_REBOOT_FAILURE_THRESHOLD
+		int "HTTP reboot failure threshold"
+		default 10
+		help
+			Reboot the ESP32 after this many consecutive HTTP post failures.
 endmenu
 
 menu "Wifi Config"
@@ -78,6 +90,12 @@ config ESP_WIFI_MAXIMUM_RETRY
 	default "5"
 	help
 		Set the Maxiumum retry to avoid station reconnecting to the AP ulimited when the AP is really inexistent..
+
+config ESP_WIFI_REBOOT_FAILURE_THRESHOLD
+	int "WiFi reboot failure threshold"
+	default "20"
+	help
+		Reboot the ESP32 after this many consecutive WiFi disconnect failures.
 
 choice ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD
 	prompt "WIFI Scan auth mode threshold"
