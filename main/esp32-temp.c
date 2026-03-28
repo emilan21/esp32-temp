@@ -261,7 +261,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
   return ESP_OK;
 }
 
-static void http_rest_with_url(char *post_data) {
+static esp_err_t http_rest_with_url(char *post_data) {
   // Declare local_response_buffer with size (MAX_HTTP_OUTPUT_BUFFER + 1) to
   // prevent out of bound access when it is used functions like strlen(). The
   // buffer should only be used upto size MAX_HTTP_OUTPUT_BUFFER
@@ -306,9 +306,11 @@ static void http_rest_with_url(char *post_data) {
   } else {
     ESP_LOGE(HTTP_CLIENT_TAG, "HTTP POST request fialed: %s",
              esp_err_to_name(err));
+    return 1;
   }
 
   esp_http_client_cleanup(client);
+  return 0;
 }
 
 static void http_rest_with_hostname_path(void) {}
@@ -371,24 +373,39 @@ void app_main(void) {
         dht11_failures = 0;
       }
     }
+    if (http_failures >= 10) {
+      esp_err_t http_err = http_rest_with_url(post_data);
+      if (http_err != 0) {
+        esp_restart();
+      } else {
+        http_failures = 0;
+      }
+    }
+  }
 
-    // Read DHT11 sensor
-    esp_err_t dht11_err = dht_read_float_data(
-        DHT_TYPE_DHT11, DHT11_GPIO, &dht11_sensor.humidity, &dht11_sensor.temp);
-    if (dht11_err != 0) {
-      ESP_LOGE(DHT11_TAG, "Could not read from DHT11");
-      dht11_failures++;
-      ESP_LOGE(DHT11_TAG, "DHT11 failure count at %d", dht11_failures);
-    } else {
-      ESP_LOGI(DHT11_TAG, "Humidity: %.2f, Temp: %.2f", dht11_sensor.humidity,
-               c_to_f(dht11_sensor.temp));
-      snprintf(post_data, sizeof(post_data),
-               "{\"device_id\":\"test-esp32\",\"temp_f\":\"%.2f\",\"humidity\":"
-               "\"%.2f\"}",
-               c_to_f(dht11_sensor.temp), dht11_sensor.humidity);
-      if (cnt % 10 == 0) {
-        // post data to http rest endpoint
-        http_rest_with_url(post_data);
+  // Read DHT11 sensor
+  esp_err_t dht11_err = dht_read_float_data(
+      DHT_TYPE_DHT11, DHT11_GPIO, &dht11_sensor.humidity, &dht11_sensor.temp);
+  if (dht11_err != 0) {
+    ESP_LOGE(DHT11_TAG, "Could not read from DHT11");
+    dht11_failures++;
+    ESP_LOGE(DHT11_TAG, "DHT11 failure count at %d", dht11_failures);
+  } else {
+    ESP_LOGI(DHT11_TAG, "Humidity: %.2f, Temp: %.2f", dht11_sensor.humidity,
+             c_to_f(dht11_sensor.temp));
+    snprintf(post_data, sizeof(post_data),
+             "{\"device_id\":\"test-esp32\",\"temp_f\":\"%.2f\",\"humidity\":"
+             "\"%.2f\"}",
+             c_to_f(dht11_sensor.temp), dht11_sensor.humidity);
+    if (cnt % 10 == 0) {
+      // post data to http rest endpoint
+      esp_err_t http_err = http_rest_with_url(post_data);
+      if (http_err != 0) {
+        ESP_LOGE(HTTP_CLIENT_TAG, "Could not post datat to server");
+        http_failures++;
+        ESP_LOGE(HTTP_CLIENT_TAG, "HTTP failure count at %d", http_failures);
+      } else {
+        ESP_LOGI(HTTP_CLIENT_TAG, "Was able to post to server");
       }
     }
 
