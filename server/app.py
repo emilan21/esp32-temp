@@ -1,12 +1,13 @@
 import json
+import math
 import os
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from flask import Flask, jsonify, render_template, request
-
 
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/data"))
 DB_FILE = DATA_DIR / "readings.db"
@@ -47,10 +48,15 @@ def ensure_data_dir():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
+@contextmanager
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def utc_now():
@@ -62,18 +68,15 @@ def utc_now_iso():
 
 
 def parse_number(value, field_name):
-    if isinstance(value, (int, float)):
-        return value
-
-    if isinstance(value, str):
-        try:
-            if "." in value:
-                return float(value)
-            return int(value)
-        except ValueError as exc:
-            raise ValueError(f"{field_name} must be numeric") from exc
-
-    raise ValueError(f"{field_name} must be numeric")
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise ValueError(f"{field_name} must be a finite number")
+    try:
+        number = float(value)
+    except (ValueError, OverflowError) as exc:
+        raise ValueError(f"{field_name} must be a finite number") from exc
+    if not math.isfinite(number):
+        raise ValueError(f"{field_name} must be a finite number")
+    return number
 
 
 def c_to_f(temp_c):
@@ -106,6 +109,8 @@ def normalize_reading(payload):
 
     device_id = str(payload.get("device_id", "unknown")).strip() or "unknown"
     humidity = parse_number(payload["humidity"], "humidity")
+    if not 0 <= humidity <= 100:
+        raise ValueError("humidity must be between 0 and 100")
 
     if "temp_f" in payload:
         temp_f = parse_number(payload["temp_f"], "temp_f")

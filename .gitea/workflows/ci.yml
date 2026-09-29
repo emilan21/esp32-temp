@@ -1,0 +1,21 @@
+name: server-checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    container: python:3.12-slim
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install server dependencies
+        run: python -m pip install --no-cache-dir -r requirements-dev.txt
+      - name: Check server
+        run: |
+          ruff check server tests
+          ruff format --check server tests
+          python -m compileall -q server tests
+          python -m unittest discover -s tests -v
