@@ -2,3 +2,8 @@ build/
 sdkconfig*
 server/data/
 server/__pycache__/
+tests/__pycache__/
+.ruff_cache/
+.cache/
+pcb/esp32-temp/.history/
+.venv/
